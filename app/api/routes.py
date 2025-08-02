@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, Form
 from typing import Optional
 from app.services import parser, analyzer
 import json
+import os
 from app.models.resume import ResumeAnalysisResponse
 from fastapi.responses import JSONResponse
 
@@ -21,7 +22,16 @@ async def upload_resume(
         "application/pdf",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ]
-    if file.content_type not in allowed_types:
+    allowed_exts = [".pdf", ".docx"]
+
+    # Get file extension in lowercase
+    ext = os.path.splitext(file.filename)[1].lower()
+
+    # Hybrid check: pass if MIME matches OR extension matches
+    if not (
+        (file.content_type and file.content_type in allowed_types) or
+        (ext in allowed_exts)
+    ):
         return error_response("Invalid file type. Only PDF and DOCX allowed.", 400)
 
     # Ensure at least one mode of keyword input is provided
