@@ -21,6 +21,8 @@ class ResumeAnalysisResponse(BaseModel):
     overall: OverallStats
     technical_skills: SkillSection
     soft_skills: SkillSection
+    matched_by_category: Dict[str, List[str]]  # ✅ NEW
+    missing_by_category: Dict[str, List[str]]  # ✅ NEW
     missing_ranked: MissingRanked
     matched_in_order: List[str]
     missing_in_order: List[str]

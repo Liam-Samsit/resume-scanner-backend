@@ -1,55 +1,24 @@
 import re
 from nltk.corpus import stopwords
+from app.services.keywords import DEFAULT_KEYWORDS, DEFAULT_WEIGHTS
 
 STOPWORDS = set(stopwords.words("english"))
 
 MULTIWORD_TERMS = [
-    "machine learning",
-    "artificial intelligence",
-    "data science",
-    "unit testing",
-    "project management",
-    "user interface",
-    "user experience",
-    "cloud computing",
-    "rest api",
-    "version control",
+    "machine learning", "artificial intelligence", "data science",
+    "unit testing", "project management", "user interface", "user experience",
+    "cloud computing", "rest api", "version control"
 ]
 
 SYNONYMS = {
-    "ml": "machine learning",
-    "ai": "artificial intelligence",
-    "js": "javascript",
-    "node": "nodejs",
-    "node.js": "nodejs",
-    "postgres": "postgresql",
-    "sql server": "mssql",
-    "c sharp": "c#",
-    "cpp": "c++",
-    "frontend": "front end",
-    "backend": "back end",
-    "ux": "user experience",
-    "ui": "user interface",
+    "ml": "machine learning", "ai": "artificial intelligence",
+    "js": "javascript", "node": "nodejs", "node.js": "nodejs",
+    "postgres": "postgresql", "sql server": "mssql", "c sharp": "c#",
+    "cpp": "c++", "frontend": "front end", "backend": "back end",
+    "ux": "user experience", "ui": "user interface"
 }
-
-WEIGHTS = {
-    # Technical skills
-    "python": 3, "fastapi": 3, "flutter": 3, "sql": 3,
-    "postgresql": 3, "docker": 3, "linux": 3,
-    "machine learning": 3, "artificial intelligence": 3,
-    "javascript": 3, "react": 3, "nodejs": 3,
-    "mssql": 3, "rest api": 3,
-
-    # Soft skills
-    "teamwork": 1, "communication": 1,
-    "leadership": 1, "project management": 1
-}
-
-TECHNICAL_TERMS = {k for k, w in WEIGHTS.items() if w >= 3}
-SOFT_TERMS = {k for k, w in WEIGHTS.items() if w == 1}
 
 def preprocess_text(text: str) -> list:
-    """Lowercase, clean, detect multi-word terms, normalize synonyms, remove stopwords."""
     text = text.lower()
     text = re.sub(r"[^a-z0-9\s\+#]", " ", text)
 
@@ -73,26 +42,56 @@ def section_score(matched: set, job_terms: set) -> int:
         return 0
     return int((len(matched) / total) * 100)
 
+def categorize_skills(skills_list):
+    """Return a dict mapping category -> list of skills found."""
+    categorized = {cat: [] for cat in DEFAULT_KEYWORDS.keys()}
+    for skill in skills_list:
+        for category, terms in DEFAULT_KEYWORDS.items():
+            if skill in terms:
+                categorized[category].append(skill)
+                break
+    # Remove empty categories
+    categorized = {cat: vals for cat, vals in categorized.items() if vals}
+    # ✅ Ensure all are strings
+    categorized = {cat: [str(s) for s in vals] for cat, vals in categorized.items()}
+    return categorized
+
 def compare_resume_to_job(resume_text: str, job_description: str = None,
                           custom_weights: dict = None, manual_keywords: dict = None) -> dict:
-    # Merge default weights with custom weights
-    active_weights = WEIGHTS.copy()
+    # Use default weights if none provided
+    active_weights = DEFAULT_WEIGHTS.copy()
     if custom_weights:
         for k, v in custom_weights.items():
             active_weights[k.lower()] = int(v)
 
     resume_words = set(preprocess_text(resume_text))
 
-    # Keep original order list
-    if manual_keywords:
-        job_words_list = [k.lower() for k in manual_keywords.keys()]
-        for k, v in manual_keywords.items():
-            active_weights[k.lower()] = int(v)
-    else:
-        job_words_list = preprocess_text(job_description)
+    # Prepare job words list
+    job_words_list = []
 
+    # If job description provided → extract keywords
+    if job_description:
+        jd_terms = preprocess_text(job_description)
+        job_words_list.extend(jd_terms)
+
+    # If manual keywords provided → use them
+    if manual_keywords:
+        for k, v in manual_keywords.items():
+            term = k.lower()
+            job_words_list.append(term)
+            active_weights[term] = int(v)  # manual override
+
+    # If neither provided → use defaults
+    if not job_description and not manual_keywords:
+        for term in sum(DEFAULT_KEYWORDS.values(), []):
+            job_words_list.append(term)
+
+    # Deduplicate preserving order
+    seen = set()
+    job_words_list = [x for x in job_words_list if not (x in seen or seen.add(x))]
     job_words_set = set(job_words_list)
 
+    # Match & missing
     matched = [w for w in job_words_list if w in resume_words]
     missing = [w for w in job_words_list if w not in resume_words]
 
@@ -100,6 +99,10 @@ def compare_resume_to_job(resume_text: str, job_description: str = None,
     matched_soft = [w for w in matched if active_weights.get(w, 1) == 1]
     missing_tech = [w for w in missing if active_weights.get(w, 1) >= 3]
     missing_soft = [w for w in missing if active_weights.get(w, 1) == 1]
+
+    # Categorized matches/missing (✅ all string lists)
+    matched_by_category = categorize_skills(matched)
+    missing_by_category = categorize_skills(missing)
 
     # Scoring
     total_points = sum(active_weights.get(word, 1) for word in job_words_set)
@@ -109,11 +112,10 @@ def compare_resume_to_job(resume_text: str, job_description: str = None,
     tech_score = section_score(set(matched_tech), {w for w in job_words_set if active_weights.get(w, 1) >= 3})
     soft_score = section_score(set(matched_soft), {w for w in job_words_set if active_weights.get(w, 1) == 1})
 
-    # Rank missing
     missing_ranked = {
-        "high_priority": [w for w in missing if active_weights.get(w, 1) >= 4],
-        "medium_priority": [w for w in missing if 2 <= active_weights.get(w, 1) <= 3],
-        "low_priority": [w for w in missing if active_weights.get(w, 1) == 1]
+        "high_priority": [str(w) for w in missing if active_weights.get(w, 1) >= 4],
+        "medium_priority": [str(w) for w in missing if 2 <= active_weights.get(w, 1) <= 3],
+        "low_priority": [str(w) for w in missing if active_weights.get(w, 1) == 1]
     }
 
     suggestions = []
@@ -133,19 +135,18 @@ def compare_resume_to_job(resume_text: str, job_description: str = None,
         },
         "technical_skills": {
             "score": tech_score,
-            "matched": matched_tech,
-            "missing": missing_tech
+            "matched": [str(w) for w in matched_tech],
+            "missing": [str(w) for w in missing_tech]
         },
         "soft_skills": {
             "score": soft_score,
-            "matched": matched_soft,
-            "missing": missing_soft
+            "matched": [str(w) for w in matched_soft],
+            "missing": [str(w) for w in missing_soft]
         },
+        "matched_by_category": matched_by_category,
+        "missing_by_category": missing_by_category,
         "missing_ranked": missing_ranked,
-        "matched_in_order": matched,
-        "missing_in_order": missing,
-        "suggestions": suggestions
+        "matched_in_order": [str(w) for w in matched],
+        "missing_in_order": [str(w) for w in missing],
+        "suggestions": [str(s) for s in suggestions]
     }
-
-
-
