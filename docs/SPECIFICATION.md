@@ -1,162 +1,84 @@
-Got it — here’s your specification rewritten as a clean Markdown document without emojis.
+# Resume Scanner Backend – Specification
 
-````markdown
-# Cahier de Charges — Resume Scanner Backend (FastAPI)
+## 1. Overview
 
-## 1. Purpose
-A backend API that:
-- Accepts resume and job description uploads
-- Extracts text from files (PDF/DOCX)
-- Analyzes resume content against job requirements
-- Returns:
-  - Matching keywords count
-  - Missing important keywords
-  - Overall score (0–100)
-  - Improvement suggestions
+The Resume Scanner Backend is a RESTful API service that:
+- Parses resumes (PDF or DOCX)
+- Extracts relevant information (skills, tools)
+- Matches the resume with a given job description
+- Returns insights like match percentage and missing keywords
+
+This service is intended for use in a larger application (e.g., job application automation, HR tool, student CV analysis system, etc.).
 
 ---
 
-## 2. Tech Stack
-- Python 3.x
-- FastAPI — API framework
-- Uvicorn — server
-- pdfminer.six — PDF parsing
-- python-docx — DOCX parsing
-- pydantic — request/response models
-- python-multipart — file uploads
-- (Optional) nltk or scikit-learn — for advanced text processing
+## 2. Goals
+
+- Automate resume parsing and job matching
+- Provide an easy-to-use API for frontend or CLI tools
+- Ensure accuracy and extensibility in data extraction
 
 ---
 
-## 3. API Endpoints
+## 3. Features
 
-### 3.1 Health Check
-**GET** `/health`  
-**Purpose:** Verify API is running  
-**Response:**
-```json
-{ "status": "ok" }
-````
-
-### 3.2 Upload Resume
-
-**POST** `/upload-resume`
-
-**Request:**
-
-* Multipart form-data
-* Fields:
-
-  * `file`: Resume file (PDF/DOCX)
-  * `job_description`: String OR file upload
-
-**Process:**
-
-1. Save temp file or process in memory
-2. Extract text from resume & job description
-3. Preprocess (lowercase, remove stopwords, tokenize)
-4. Generate keyword list from job description
-5. Compare with resume keywords
-6. Calculate:
-
-   * Matches
-   * Missing keywords
-   * Score
-7. Return results
-
-**Response Example:**
-
-```json
-{
-  "score": 78,
-  "matched_keywords": ["python", "sql", "fastapi"],
-  "missing_keywords": ["docker", "linux"],
-  "suggestions": [
-    "Add 'docker' if you have experience",
-    "Mention 'linux' in your experience section"
-  ]
-}
-```
+- Resume parsing via `/parse_resume`
+- Resume-job description matching via `/match_job_description`
+- Keyword-based scoring system
+- Simple file upload using `multipart/form-data`
+- JSON-based responses for easy integration
+- Basic root endpoint for server health
 
 ---
 
-## 4. Processing Logic
+## 4. Functional Requirements
 
-### File Handling
-
-* Accept PDF or DOCX
-* Reject other formats
-* Max file size: \~5MB
-
-### Text Extraction
-
-* pdfminer.six for PDF
-* python-docx for DOCX
-
-### Preprocessing
-
-* Lowercase
-* Remove punctuation
-* Tokenize into words
-* Remove stopwords (NLTK stopword list)
-
-### Keyword Extraction (Job Description)
-
-* Split into words
-* Remove duplicates
-* Keep nouns & verbs (optional advanced step)
-
-### Scoring
-
-* Assign weights (e.g., tech skills 3pts, soft skills 1pt)
-* Calculate score: `(points / max_points) * 100`
-
-### Suggestions
-
-* For missing keywords: create simple tips
-
-### Error Handling
-
-* Invalid file type → HTTP 400
-* Missing job description → HTTP 400
-* Empty resume text → HTTP 422
+- ✅ Upload PDF or DOCX resumes
+- ✅ Extract candidate data (skills, tools, education level)
+- ✅ Accept raw job descriptions via POST request
+- ✅ Return matching results (score, matched & missing keywords)
+- ✅ Return structured JSON for every endpoint
 
 ---
 
-## 5. Security
+## 5. Non-Functional Requirements
 
-* File validation — check MIME type
-* Size limits — reject very large uploads
-* Temp file cleanup — delete after processing
-* CORS control — allow only frontend domain in production
-
----
-
-## 6. Future Features
-
-* Grammar/readability check
-* Section detection (e.g., Education, Experience)
-* ATS-friendly formatting recommendations
-* Multi-language support
+-  Runs on FastAPI for lightweight backend performance
+-  Easily testable using tools like cURL or Postman
+-  CORS enabled for frontend compatibility
+-  Dependency management using `requirements.txt`
+-  No authentication required (initial version)
 
 ---
 
-## 7. Folder Structure
+## 6. Technologies Used
 
-```
-app/
-  ├── __init__.py
-  ├── main.py          # FastAPI app + routes
-  ├── api/
-  │   ├── __init__.py
-  │   ├── routes.py    # API endpoints
-  ├── services/
-  │   ├── parser.py    # PDF/DOCX text extraction
-  │   ├── analyzer.py  # keyword scoring logic
-  ├── models/
-  │   ├── __init__.py
-  │   ├── resume.py    # pydantic schemas
-requirements.txt
-```
+| Category           | Technology     |
+|--------------------|----------------|
+| Backend Framework  | FastAPI        |
+| Resume Parsing     | python-docx, PyPDF2 |
+| Matching Logic     | Custom keyword scoring |
+| Deployment         | Uvicorn (local), GitHub (source control) |
+| Environment        | Python 3.11+   |
 
+---
+
+## 7. Assumptions
+
+- Resumes are mostly in English
+- Users submit reasonably structured resumes
+- Job descriptions are free-form text (not formal JSON schemas)
+- Keyword matching is based on literal terms, not NLP semantics (for now)
+
+---
+
+## 8. Future Improvements
+
+-  Add authentication (API keys or OAuth2)
+-  Improve matching with NLP and embeddings (e.g. spaCy, BERT)
+-  Support for more file types (e.g., images or HTML)
+-  Admin dashboard or frontend viewer
+-  Logging and monitoring
+-  Multi-language support
+-  Deployment to a cloud provider (e.g. Render, Railway, Vercel backend)
 
