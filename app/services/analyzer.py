@@ -2,6 +2,8 @@ import re
 from nltk.corpus import stopwords
 from app.services.keywords import DEFAULT_KEYWORDS, DEFAULT_WEIGHTS
 
+
+
 STOPWORDS = set(stopwords.words("english"))
 
 MULTIWORD_TERMS = [
