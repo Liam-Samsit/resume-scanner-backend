@@ -4,12 +4,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from app.api import routes
 
-# Load environment variables from .env
+# Load environment variables from .env (for local development only)
 load_dotenv()
 
-# Parse allowed origins
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "")
-origins = [origin.strip() for origin in allowed_origins.split(",") if origin.strip()]
+# Use OS environment variables directly to support Render
+frontend_origin_1 = os.environ.get("FRONTEND_ORIGIN_1", "")
+frontend_origin_2 = os.environ.get("FRONTEND_ORIGIN_2", "")
+
+# Filter out any empty entries
+origins = [o for o in [frontend_origin_1, frontend_origin_2] if o]
 
 app = FastAPI(
     title="Resume Scanner API",
