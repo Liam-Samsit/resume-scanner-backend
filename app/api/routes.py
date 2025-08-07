@@ -76,6 +76,8 @@ async def upload_resume(
         custom_weights=weights_dict,
         manual_keywords=keywords_list
     )
+    print("✅ Results:", results)
+    print("📤 Returning:", ResumeAnalysisResponse(**results).dict())
+    return ResumeAnalysisResponse(**results)
 
-    return results
 
