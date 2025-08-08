@@ -1,6 +1,3 @@
-# app/services/keywords.py
-
-# === Default keywords grouped by category ===
 DEFAULT_KEYWORDS = {
     "programming_languages": [
         "python", "java", "c", "c++", "c#", "javascript", "typescript",
@@ -65,8 +62,8 @@ DEFAULT_KEYWORDS = {
     ]
 }
 
-# === Default weights ===
-# Technical categories = weight 3, Soft skills = weight 1
+
+# Technical categories have weight 3, Soft skills weigh 1
 DEFAULT_WEIGHTS = {}
 
 for category, terms in DEFAULT_KEYWORDS.items():

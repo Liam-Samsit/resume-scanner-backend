@@ -26,30 +26,20 @@ async def upload_resume(
 
     ext = os.path.splitext(file.filename)[1].lower()
 
-    # Hybrid file type check
+    # Hybrid file type check hehe
     if not (
         (file.content_type and file.content_type in allowed_types) or
         (ext in allowed_exts)
     ):
         return error_response("Invalid file type. Only PDF and DOCX allowed.", 400)
 
-    # Ensure at least one of job_description or keywords_json is provided
-    # Remove the strict error check
-    # if not job_description and not keywords_json:
-    #     return error_response(
-    #         "Please provide either a job description, a keyword list, or both.",
-    #         400
-    #     )
 
-    # Now we just parse what's given; defaults handled in analyzer
-
-
-    # Extract text from resume
+    # Extracting text from resume
     resume_text = await parser.extract_text(file)
     if not resume_text.strip():
         return error_response("Resume text is empty or could not be read.", 422)
 
-    # Parse custom weights
+    # Parsing the custom weights
     weights_dict = {}
     if custom_weights:
         try:
@@ -59,7 +49,7 @@ async def upload_resume(
         except Exception:
             return error_response("custom_weights must be a valid JSON object.", 400)
 
-    # Parse keywords JSON
+    # Parsing keywords JSON
     keywords_list = None
     if keywords_json:
         try:
@@ -69,7 +59,7 @@ async def upload_resume(
         except Exception:
             return error_response("keywords_json must be a valid JSON object.", 400)
 
-    # Pass both job_description and keywords_list to analyzer
+    # Pass both job_description and keywords_list to analyzer because why not
     results = analyzer.compare_resume_to_job(
         resume_text,
         job_description=job_description,

@@ -5,13 +5,14 @@ from dotenv import load_dotenv
 from app.api import routes
 
 # Load environment variables from .env (for local development only)
+# Idk why this doesn't work as intended on render
 load_dotenv()
 
 # Use OS environment variables directly to support Render
 frontend_origin_1 = os.environ.get("FRONTEND_ORIGIN_1", "")
 frontend_origin_2 = os.environ.get("FRONTEND_ORIGIN_2", "")
 
-# Filter out any empty entries
+# Filtering out any empty entries
 origins = [o for o in [frontend_origin_1, frontend_origin_2] if o]
 
 app = FastAPI(
@@ -20,7 +21,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS setup
+# CORS setup (I don't like this part)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -29,7 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routes
+# Including routes
 app.include_router(routes.router)
 
 @app.get("/health")

@@ -55,15 +55,15 @@ def categorize_skills(skills_list):
             if skill in terms:
                 categorized[category].append(skill)
                 break
-    # Remove empty categories
+    # Removing empty categories
     categorized = {cat: vals for cat, vals in categorized.items() if vals}
-    # ✅ Ensure all are strings
+    # Ensuring ALL are strings
     categorized = {cat: [str(s) for s in vals] for cat, vals in categorized.items()}
     return categorized
 
 def compare_resume_to_job(resume_text: str, job_description: str = None,
                           custom_weights: dict = None, manual_keywords: dict = None) -> dict:
-    # Use default weights if none provided
+    # Use default weights if not provided by user
     active_weights = DEFAULT_WEIGHTS.copy()
     if custom_weights:
         for k, v in custom_weights.items():
@@ -71,22 +71,25 @@ def compare_resume_to_job(resume_text: str, job_description: str = None,
 
     resume_words = set(preprocess_text(resume_text))
 
-    # Prepare job words list
     job_words_list = []
 
-    # If job description provided → extract keywords
+
+    # gummy bear
+
+
+    # If job description is provided then extract keywords
     if job_description:
         jd_terms = preprocess_text(job_description)
         job_words_list.extend(jd_terms)
 
-    # If manual keywords provided → use them
+    # If manual keywords are provided then use them
     if manual_keywords:
         for k, v in manual_keywords.items():
             term = k.lower()
             job_words_list.append(term)
             active_weights[term] = int(v)  # manual override
 
-    # If neither provided → use defaults
+    # If neither are provided then use defaults (a little incompatible with the frontend lmao)
     if not job_description and not manual_keywords:
         for term in sum(DEFAULT_KEYWORDS.values(), []):
             job_words_list.append(term)
@@ -96,7 +99,7 @@ def compare_resume_to_job(resume_text: str, job_description: str = None,
     job_words_list = [x for x in job_words_list if not (x in seen or seen.add(x))]
     job_words_set = set(job_words_list)
 
-    # Match & missing
+    # Matches and missings
     matched = [w for w in job_words_list if w in resume_words]
     missing = [w for w in job_words_list if w not in resume_words]
 
@@ -105,11 +108,11 @@ def compare_resume_to_job(resume_text: str, job_description: str = None,
     missing_tech = [w for w in missing if active_weights.get(w, 1) >= 3]
     missing_soft = [w for w in missing if active_weights.get(w, 1) == 1]
 
-    # Categorized matches/missing (✅ all string lists)
+    # Categorized matches and missing
     matched_by_category = categorize_skills(matched)
     missing_by_category = categorize_skills(missing)
 
-    # Scoring
+    # Scoring HECK YEAHH
     total_points = sum(active_weights.get(word, 1) for word in job_words_set)
     earned_points = sum(active_weights.get(word, 1) for word in matched)
     overall_score = int((earned_points / total_points) * 100) if total_points > 0 else 0
